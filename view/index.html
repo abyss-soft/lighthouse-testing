@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/vuetify@3.1.7/dist/vuetify.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.7/dist/vuetify.min.js"></script>
+    <title>View logs</title>
+  </head>
+  <body>
+    <div id="app">
+      <v-app>
+        <v-card>
+          <v-toolbar color="primary">
+            <v-toolbar-title>PageSpeed Insights Dashboard</v-toolbar-title>
+            <template v-slot:extension>
+              <v-tabs v-model="tab" direction="horizontal">
+                <v-tab value="option-1"> Mobile and Desktop </v-tab>
+                <v-tab v-if="dataDesktop && dataMobile" value="option-2"> Table View </v-tab>
+              </v-tabs>
+            </template>
+          </v-toolbar>
+
+          <v-window v-model="tab">
+            <v-window-item value="option-1">
+              <v-card flat>
+                <v-card-text>
+                  <div class="flex">
+                    <div v-if="sortMobile" class="card">
+                      <h2>Mobile version</h2>
+                      <div
+                        v-for="(data, nameSection, id) in sortMobile"
+                        :key="id"
+                        class="metric_keys"
+                      >
+                        <a :href="data.url">
+                          <h4 class="name-metrick__title">
+                            {{nameSection}}
+                          </h4></a
+                        >
+                        <div
+                          v-for="(value, keyData, iddata) in data.data"
+                          key="iddata"
+                          class="flex"
+                        >
+                          <p class="name-section__title">{{keyData}}:</p>
+                          <div class="flex name-section__value">
+                            <p>{{getResultValue(value)[0]}}</p>
+                            <p class="name-section__average">
+                              [{{getResultValue(value)[1]}}]
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-if="sortDesktop" class="card">
+                      <h2>Desktop version</h2>
+                      <div
+                        v-for="(data, nameSection, id) in sortDesktop"
+                        :key="id"
+                        class="metric_keys"
+                      >
+                        <a :href="data.url">
+                          <h4 class="name-metrick__title">
+                            {{nameSection}}
+                          </h4></a
+                        >
+                        <div
+                          v-for="(value, keyData, iddata) in data.data"
+                          key="iddata"
+                          class="flex"
+                        >
+                          <p
+                            v-if="keyData !== 'url'"
+                            class="name-section__title"
+                          >
+                            {{keyData}}:
+                          </p>
+                          <div class="flex name-section__value">
+                            <p>{{getResultValue(value)[0]}}</p>
+                            <p class="name-section__average">
+                              [{{getResultValue(value)[1]}}]
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-window-item>
+            <v-window-item value="option-2">
+              <v-card flat>
+                <v-card-text class="table__setting">
+                  <div
+                    v-for="(data, metricName, id) in tableView"
+                    :key="id"
+                    class="row"
+                  >
+                    <div class="table__metricName">{{metricName}}</div>
+                    <div class="flex w-100">
+                      <div
+                        v-for="(dataPage, titlePage, id) in sortData(data)"
+                        :key="id"
+                        class="table__data"
+                      >
+                        <a :href="dataPage.url" class="tooltip-wrapper">
+                          <p class="table__titlePage">{{titlePage}}</p>
+                          <span class="tooltip table__data-value"
+                            >{{dataPage.url}}
+                          </span>
+                        </a>
+                        <div
+                          v-for="(dataTitle, palatformName, id) in dataPage"
+                          :key="id"
+                        >
+                          <div class="flex">
+                            <p
+                              v-if="palatformName !=='url'"
+                              class="table__palatformName"
+                            >
+                              {{palatformName}}
+                            </p>
+                            <div class="flex tooltip-wrapper">
+                              <p class="table__data-value_average">
+                                {{getResultValue(dataTitle)[0]}}
+                              </p>
+                              <span class="tooltip table__data-value"
+                                >{{getResultValue(dataTitle)[1]}}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-window-item>
+          </v-window>
+        </v-card>
+      </v-app>
+    </div>
+  </body>
+  <script src="./vue.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</html>

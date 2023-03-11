@@ -1,0 +1,17 @@
+{
+  "name": "lighthouse-testing",
+  "version": "1.0.0",
+  "description": "Automation of site testing in lighthouse",
+  "main": "index.js",
+  "scripts": {
+    "start": "node start",
+    "testing": "npm run start desktop && npm run start mobile",
+    "testingSync": "npm run start desktop sync && npm run start mobile sync"
+  },
+  "author": "abyssSoft",
+  "license": "ISC",
+  "homepage": "https://github.com/abyss-soft/lighthouse-testing#readme",
+  "dependencies": {
+    "lighthouse": "9.6.8"
+  }
+}
