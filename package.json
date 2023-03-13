@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node start",
-    "testing": "npm run start desktop && npm run start mobile",
-    "testingSync": "npm run start desktop sync && npm run start mobile sync"
+    "testing": "npm run start desktop sync && npm run start mobile sync",
+    "testingAsync": "npm run start desktop && npm run start mobile"
   },
   "author": "abyssSoft",
   "license": "ISC",

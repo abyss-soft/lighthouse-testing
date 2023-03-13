@@ -17,11 +17,11 @@
 > npm install
 
 ###  Run
-for asynchronous testing (everything is done at the same time):
-> npm run testing
-> 
 for sequential testing (everything is performed sequentially, one after the other. Suitable for slow computers):
-> npm run testingSync
+> npm run testing
+>
+for asynchronous testing (everything is done at the same time):
+> npm run testingAsync
 >
 ### View dashboards for all statistics
 
