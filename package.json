@@ -12,6 +12,6 @@
   "license": "ISC",
   "homepage": "https://github.com/abyss-soft/lighthouse-testing#readme",
   "dependencies": {
-    "lighthouse": "9.6.8"
+    "lighthouse": "^10.0.2"
   }
 }
