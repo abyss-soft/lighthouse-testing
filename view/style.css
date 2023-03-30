@@ -54,7 +54,7 @@ h2 {
 
 .row {
   display: flex;
-  min-height: 13vh;
+  min-height: 10vh;
   align-items: baseline;
   padding: 10px;
 }
