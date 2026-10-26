@@ -4,6 +4,17 @@ Run repeatable local Lighthouse performance audits for the pages configured in
 `url.js`. Each audit saves a full Lighthouse JSON report and updates the
 mobile or desktop dashboard data in `log/`.
 
+Related project:
+[PageSpeed monitor](https://github.com/abyss-soft/headless-browser_autotest)
+
+## Dashboard screenshots
+
+Device overview:
+<img title="" src="./img/img.png" alt="" width="800" height="600">
+
+Metric comparison:
+<img title="" src="./img/img2.png" alt="" width="800" height="600">
+
 ## Requirements
 
 - Node.js 22.19 or newer
@@ -45,3 +56,8 @@ Full reports are saved as
 ClickHouse export is disabled by default. To enable it, set `SENDDATA=true` in
 `.env`, then replace the example `CLICKHOUSE_URL`, `USERNAMELOGIN`, and
 `PASSWORDLOGIN` with your own values. There is no built-in server address.
+
+## View a result
+
+The result will be visible on the ClickHouse dashboard.
+To view it manually, open `view/index.html` in your browser.

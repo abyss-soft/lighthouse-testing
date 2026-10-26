@@ -1,155 +1,451 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/vuetify@3.1.7/dist/vuetify.min.css"
+    <meta
+      name="description"
+      content="Сводная панель результатов Lighthouse для мобильных и десктопных страниц."
     />
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.7/dist/vuetify.min.js"></script>
-    <title>View logs</title>
+    <title>Lighthouse — отчёты производительности</title>
+    <style>
+      [v-cloak] {
+        display: none;
+      }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   </head>
-  <body>
-    <div id="app">
-      <v-app>
-        <v-card>
-          <v-toolbar color="primary">
-            <v-toolbar-title>PageSpeed Insights Dashboard</v-toolbar-title>
-            <template v-slot:extension>
-              <v-tabs v-model="tab" direction="horizontal">
-                <v-tab value="option-1"> Mobile and Desktop </v-tab>
-                <v-tab v-if="dataDesktop && dataMobile" value="option-2">
-                  Table View
-                </v-tab>
-              </v-tabs>
-            </template>
-          </v-toolbar>
+  <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+    <div id="app" v-cloak>
+      <header class="border-b border-slate-200 bg-white">
+        <div
+          class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200"
+              aria-hidden="true"
+            >
+              <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3 13h4l3-9 4 16 3-7h4"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm font-semibold tracking-tight">Lighthouse</p>
+              <p class="text-xs text-slate-500">Отчёты производительности</p>
+            </div>
+          </div>
+          <span
+            v-if="!loading && !error && pageNames.length"
+            class="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 sm:inline-flex"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            Данные загружены
+          </span>
+        </div>
+      </header>
 
-          <v-window v-model="tab">
-            <v-window-item value="option-1">
-              <v-card flat>
-                <v-card-text>
-                  <div class="flex">
-                    <div v-if="sortMobile" class="card">
-                      <h2>Mobile version</h2>
-                      <div
-                        v-for="(data, nameSection, id) in sortMobile"
-                        :key="id"
-                        class="metric_keys"
-                      >
-                        <a :href="data.url">
-                          <h4 class="name-metrick__title">
-                            {{nameSection}}
-                          </h4></a
-                        >
-                        <div
-                          v-for="(value, keyData, iddata) in data.data"
-                          key="iddata"
-                          class="flex"
-                        >
-                          <p class="name-section__title">{{keyData}}:</p>
-                          <div class="flex name-section__value">
-                            <p>{{getResultValue(value)[0]}}</p>
-                            <p class="name-section__average">
-                              [{{getResultValue(value)[1]}}]
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+      <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <section
+          class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-indigo-950 to-indigo-800 px-6 py-8 text-white shadow-xl shadow-indigo-950/10 sm:px-8 sm:py-10"
+        >
+          <div
+            class="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-indigo-400/20 blur-3xl"
+            aria-hidden="true"
+          ></div>
+          <div
+            class="pointer-events-none absolute bottom-0 right-1/4 h-32 w-64 rounded-full bg-violet-400/10 blur-3xl"
+            aria-hidden="true"
+          ></div>
+          <div class="relative">
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300"
+            >
+              Отчёты Lighthouse
+            </p>
+            <div
+              class="mt-3 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+            >
+              <div>
+                <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
+                  Производительность страниц
+                </h1>
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-indigo-100 sm:text-base">
+                  Сравнивайте мобильные и десктопные замеры, средние значения и
+                  результаты отдельных запусков.
+                </p>
+              </div>
+              <div class="flex gap-3">
+                <div
+                  class="min-w-28 rounded-xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur"
+                >
+                  <p class="text-xs text-indigo-200">Страниц</p>
+                  <p class="mt-1 text-2xl font-semibold tabular-nums">
+                    {{ pageNames.length }}
+                  </p>
+                </div>
+                <div
+                  class="min-w-28 rounded-xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur"
+                >
+                  <p class="text-xs text-indigo-200">Показателей</p>
+                  <p class="mt-1 text-2xl font-semibold tabular-nums">
+                    {{ metricNames.length }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-                    <div v-if="sortDesktop" class="card">
-                      <h2>Desktop version</h2>
-                      <div
-                        v-for="(data, nameSection, id) in sortDesktop"
-                        :key="id"
-                        class="metric_keys"
-                      >
-                        <a :href="data.url">
-                          <h4 class="name-metrick__title">
-                            {{nameSection}}
-                          </h4></a
-                        >
-                        <div
-                          v-for="(value, keyData, iddata) in data.data"
-                          key="iddata"
-                          class="flex"
-                        >
-                          <p
-                            v-if="keyData !== 'url'"
-                            class="name-section__title"
-                          >
-                            {{keyData}}:
-                          </p>
-                          <div class="flex name-section__value">
-                            <p>{{getResultValue(value)[0]}}</p>
-                            <p class="name-section__average">
-                              [{{getResultValue(value)[1]}}]
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-window-item>
-            <v-window-item value="option-2">
-              <v-card flat>
-                <v-card-text class="table__setting">
+        <div
+          v-if="error"
+          class="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-5 text-rose-800"
+          role="alert"
+        >
+          <div class="flex gap-3">
+            <svg
+              class="mt-0.5 h-5 w-5 shrink-0 text-rose-500"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path stroke-linecap="round" d="M12 8v4m0 4h.01" />
+            </svg>
+            <div>
+              <p class="font-semibold">Не удалось загрузить сводные данные</p>
+              <p class="mt-1 text-sm text-rose-700">{{ error }}</p>
+              <p class="mt-2 text-sm text-rose-700">
+                Запустите измерения, чтобы создать файлы
+                <code class="font-mono">log/all-log_mobile.json</code> и
+                <code class="font-mono">log/all-log_desktop.json</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="loading"
+          class="mt-6 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm"
+          role="status"
+        >
+          <span
+            class="h-5 w-5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"
+            aria-hidden="true"
+          ></span>
+          Загружаем результаты измерений…
+        </div>
+
+        <section
+          v-else-if="!pageNames.length"
+          class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center"
+        >
+          <div
+            class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500"
+            aria-hidden="true"
+          >
+            <svg
+              class="h-6 w-6"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6"
+              />
+            </svg>
+          </div>
+          <h2 class="mt-4 text-base font-semibold text-slate-900">
+            Пока нет результатов
+          </h2>
+          <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+            Добавьте адреса страниц в <code
+              class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700"
+              >url.js</code
+            >
+            и запустите измерения.
+          </p>
+        </section>
+
+        <template v-else>
+          <nav
+            class="mt-7 flex flex-wrap items-center gap-2 border-b border-slate-200"
+            aria-label="Вид отчёта"
+          >
+            <button
+              type="button"
+              class="border-b-2 px-4 py-3 text-sm font-semibold transition"
+              :class="view === 'overview' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
+              :aria-current="view === 'overview' ? 'page' : null"
+              @click="view = 'overview'"
+            >
+              Обзор устройств
+            </button>
+            <button
+              type="button"
+              class="border-b-2 px-4 py-3 text-sm font-semibold transition"
+              :class="view === 'comparison' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
+              :aria-current="view === 'comparison' ? 'page' : null"
+              @click="view = 'comparison'"
+            >
+              Сравнение страниц
+            </button>
+          </nav>
+
+          <section
+            v-if="view === 'overview'"
+            class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2"
+          >
+            <article
+              v-for="platform in platforms"
+              :key="platform.key"
+              class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+            >
+              <header
+                class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4"
+              >
+                <div class="flex items-center gap-3">
                   <div
-                    v-for="(data, metricName, id) in tableView"
-                    :key="id"
-                    class="row"
+                    v-if="platform.key === 'mobile'"
+                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700"
+                    aria-hidden="true"
                   >
-                    <div class="table__metricName">{{metricName}}</div>
-                    <div class="flex w-100">
-                      <div
-                        v-for="(dataPage, titlePage, id) in sortData(data)"
-                        :key="id"
-                        class="table__data"
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    >
+                      <rect x="6" y="2.5" width="12" height="19" rx="2" />
+                      <path stroke-linecap="round" d="M10 18.5h4" />
+                    </svg>
+                  </div>
+                  <div
+                    v-else
+                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-700"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    >
+                      <rect x="3" y="3" width="18" height="14" rx="2" />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M8 21h8m-4-4v4"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="font-semibold text-slate-900">
+                      {{ platform.label }}
+                    </h2>
+                    <p class="text-xs text-slate-500">
+                      Средние значения по замерам
+                    </p>
+                  </div>
+                </div>
+                <span
+                  class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
+                >
+                  {{ Object.keys(platformData(platform.key)).length }} страниц
+                </span>
+              </header>
+
+              <div
+                v-if="!Object.keys(platformData(platform.key)).length"
+                class="px-5 py-8 text-sm text-slate-500"
+              >
+                Нет данных для этой платформы.
+              </div>
+              <div v-else class="divide-y divide-slate-100">
+                <section
+                  v-for="(page, name) in sortedPages(platformData(platform.key))"
+                  :key="name"
+                  class="p-5"
+                >
+                  <div
+                    class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                  >
+                    <div class="min-w-0">
+                      <h3 class="truncate font-semibold text-slate-900">
+                        {{ name }}
+                      </h3>
+                      <a
+                        v-if="safeUrl(page.url)"
+                        class="mt-1 block truncate text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                        :href="safeUrl(page.url)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        :title="page.url"
                       >
-                        <a :href="dataPage.url" class="tooltip-wrapper">
-                          <p class="table__titlePage">{{titlePage}}</p>
-                          <span class="tooltip table__data-value"
-                            >{{dataPage.url}}
-                          </span>
-                        </a>
-                        <div
-                          v-for="(dataTitle, palatformName, id) in dataPage"
-                          :key="id"
-                        >
-                          <div class="flex">
-                            <p
-                              v-if="palatformName !=='url'"
-                              class="table__palatformName"
-                            >
-                              {{palatformName}}
-                            </p>
-                            <div class="flex tooltip-wrapper">
-                              <p class="table__data-value_average">
-                                {{getResultValue(dataTitle)[0]}}
-                              </p>
-                              <span class="tooltip table__data-value"
-                                >{{getResultValue(dataTitle)[1]}}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        {{ page.url }}
+                      </a>
+                      <p v-else class="mt-1 truncate text-xs text-slate-500">
+                        {{ page.url }}
+                      </p>
+                    </div>
+                    <div
+                      v-if="page.data.Performance"
+                      class="flex shrink-0 items-baseline gap-1.5"
+                    >
+                      <span class="text-3xl font-bold tracking-tight text-slate-900">
+                        {{ average(page.data.Performance, "Performance") }}
+                      </span>
+                      <span class="text-xs font-medium text-slate-400">
+                        / 100
+                      </span>
                     </div>
                   </div>
-                </v-card-text>
-              </v-card>
-            </v-window-item>
-          </v-window>
-        </v-card>
-      </v-app>
+
+                  <div class="mt-5 grid gap-x-6 sm:grid-cols-2">
+                    <template v-for="metric in metricNames" :key="metric">
+                      <div
+                        v-if="metric !== 'Performance' && page.data[metric]"
+                        class="flex min-w-0 items-center justify-between gap-3 border-t border-slate-100 py-2.5"
+                      >
+                        <span class="truncate text-xs text-slate-500">
+                          {{ metric }}
+                        </span>
+                        <span
+                          class="shrink-0 text-sm font-semibold tabular-nums text-slate-800"
+                        >
+                          {{ average(page.data[metric], metric) }}
+                        </span>
+                      </div>
+                    </template>
+                  </div>
+
+                  <details
+                    class="group mt-3 border-t border-slate-100 pt-3"
+                  >
+                    <summary
+                      class="cursor-pointer list-none text-xs font-medium text-slate-500 hover:text-indigo-700"
+                    >
+                      Показать значения отдельных замеров
+                    </summary>
+                    <div class="mt-3 space-y-2">
+                      <template v-for="metric in metricNames" :key="metric">
+                        <div
+                          v-if="page.data[metric]"
+                          class="flex flex-col gap-1 text-xs sm:flex-row sm:justify-between"
+                        >
+                          <span class="text-slate-500">{{ metric }}</span>
+                          <span class="text-slate-700">
+                            {{ samples(page.data[metric]).join(" · ") }}
+                          </span>
+                        </div>
+                      </template>
+                    </div>
+                  </details>
+                </section>
+              </div>
+            </article>
+          </section>
+
+          <section
+            v-else
+            class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+          >
+            <div class="border-b border-slate-200 px-5 py-4">
+              <h2 class="font-semibold text-slate-900">Сравнение метрик</h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Среднее значение для каждой страницы и платформы
+              </p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200 text-left">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      class="sticky left-0 z-10 min-w-56 bg-slate-50 px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      Показатель
+                    </th>
+                    <th
+                      v-for="name in pageNames"
+                      :key="name"
+                      scope="col"
+                      class="min-w-56 px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      <span class="block max-w-56 truncate" :title="name">
+                        {{ name }}
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr v-for="metric in metricNames" :key="metric">
+                    <th
+                      scope="row"
+                      class="sticky left-0 z-10 bg-white px-5 py-4 text-sm font-semibold text-slate-700"
+                    >
+                      {{ metric }}
+                    </th>
+                    <td
+                      v-for="name in pageNames"
+                      :key="name"
+                      class="px-5 py-4 text-sm"
+                    >
+                      <div class="space-y-1.5">
+                        <p class="flex items-center justify-between gap-3">
+                          <span class="text-xs text-violet-700">Мобильная</span>
+                          <span
+                            v-if="mobileData[name]?.data?.[metric]"
+                            class="font-semibold tabular-nums text-slate-900"
+                          >
+                            {{ average(mobileData[name].data[metric], metric) }}
+                          </span>
+                          <span v-else class="text-slate-300">—</span>
+                        </p>
+                        <p class="flex items-center justify-between gap-3">
+                          <span class="text-xs text-sky-700">Десктоп</span>
+                          <span
+                            v-if="desktopData[name]?.data?.[metric]"
+                            class="font-semibold tabular-nums text-slate-900"
+                          >
+                            {{ average(desktopData[name].data[metric], metric) }}
+                          </span>
+                          <span v-else class="text-slate-300">—</span>
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </template>
+      </main>
+
+      <footer
+        class="mx-auto max-w-7xl px-4 pb-8 text-center text-xs text-slate-400 sm:px-6 lg:px-8"
+      >
+        Локальные отчёты Lighthouse
+      </footer>
     </div>
+    <script src="./vue.js"></script>
   </body>
-  <script src="./vue.js"></script>
-  <link rel="stylesheet" href="style.css" />
 </html>

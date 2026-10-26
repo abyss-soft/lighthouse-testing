@@ -1,172 +1,174 @@
-let dataMobile = null;
-let dataDesktop = null;
+function loadJsonp(filePath, callbackName) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    let receivedData = false;
 
-const mobileShow = (data) => {
-  dataMobile = data;
-};
-const desktopShow = (data) => {
-  dataDesktop = data;
-};
+    window[callbackName] = (data) => {
+      receivedData = true;
+      resolve(data);
+    };
 
-let scriptMobile = document.createElement("script");
-scriptMobile.src = `../log/all-log_mobile.json?callback=mobileShow`;
-document.body.append(scriptMobile);
+    script.src = filePath;
+    script.async = true;
+    script.onload = () => {
+      if (!receivedData) {
+        reject(new Error(`Файл ${filePath} не вызвал ожидаемый callback.`));
+      }
+      delete window[callbackName];
+      script.remove();
+    };
+    script.onerror = () => {
+      delete window[callbackName];
+      script.remove();
+      reject(
+        new Error(
+          `Не удалось открыть ${filePath}. Убедитесь, что файл существует и страница открыта через локальный сервер.`
+        )
+      );
+    };
 
-let scriptDesktop = document.createElement("script");
-scriptDesktop.src = `../log/all-log_desktop.json?callback=desktopShow`;
-document.body.append(scriptDesktop);
+    document.head.append(script);
+  });
+}
 
-window.onload = () => {
-  const { createApp } = Vue;
-  const { createVuetify } = Vuetify;
-  const vuetify = createVuetify();
+function normalizePageData(data, label) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`Файл ${label} содержит данные неверного формата.`);
+  }
 
-  createApp({
-    data() {
-      return {
-        dataMobile,
-        dataDesktop,
-        tab: null,
-      };
+  for (const [name, page] of Object.entries(data)) {
+    if (
+      !page ||
+      typeof page.url !== "string" ||
+      !page.data ||
+      typeof page.data !== "object" ||
+      Array.isArray(page.data)
+    ) {
+      throw new Error(`Повреждены данные страницы «${name}» (${label}).`);
+    }
+  }
+
+  return data;
+}
+
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      mobileData: {},
+      desktopData: {},
+      loading: true,
+      error: "",
+      view: "overview",
+      platforms: [
+        { key: "mobile", label: "Мобильная версия" },
+        { key: "desktop", label: "Десктопная версия" },
+      ],
+    };
+  },
+  computed: {
+    pageNames() {
+      return [
+        ...new Set([
+          ...Object.keys(this.mobileData),
+          ...Object.keys(this.desktopData),
+        ]),
+      ].sort((first, second) => first.localeCompare(second));
     },
-    computed: {
-      sortDesktop() {
-        if (!dataDesktop) return null;
-        const ordered = Object.keys(dataDesktop)
-          .sort()
-          .reduce((obj, key) => {
-            obj[key] = dataDesktop[key];
-            return obj;
-          }, {});
-        return ordered;
-      },
-      sortMobile() {
-        if (!dataMobile) return null;
-        const ordered = Object.keys(dataMobile)
-          .sort()
-          .reduce((obj, key) => {
-            obj[key] = dataMobile[key];
-            return obj;
-          }, {});
-        return ordered;
-      },
-      tableSize() {
-        let columnsTable = Object.keys(this.tableView);
-        let rowTableT = Object.keys(this.tableView[columnsTable[0]]);
-        let rowTable = Object.keys(
-          this.tableView[columnsTable[0]][rowTableT[0]]
-        );
-        return [columnsTable.length, rowTable.length + 2];
-      },
-      tableView() {
-        if (!dataMobile || !dataDesktop) return [];
-        let result = {};
-        for (const [titlePage, data] of Object.entries(dataMobile)) {
-          for (const [metricName, value] of Object.entries(data.data)) {
-            let resultMobile = {
-              [metricName]: {
-                [titlePage]: {
-                  mobile: value,
-                  url: data.url,
-                },
-              },
-            };
-            if (result[metricName]) {
-              let tempMobile = Object.assign(
-                result[metricName],
-                resultMobile[metricName]
-              );
-              result[metricName] = tempMobile;
-            } else {
-              result = Object.assign(result, resultMobile);
-            }
-          }
+    metricNames() {
+      const names = new Set();
+      for (const pages of [this.mobileData, this.desktopData]) {
+        for (const page of Object.values(pages)) {
+          for (const metric of Object.keys(page.data)) names.add(metric);
         }
-
-        for (const [titlePage, data] of Object.entries(dataDesktop)) {
-          for (const [metricName, value] of Object.entries(data.data)) {
-            let resultDesktop = {
-              [metricName]: {
-                [titlePage]: {
-                  desktop: value,
-                  url: data.url,
-                },
-              },
-            };
-            if (result[metricName]) {
-              let tempMobile = Object.assign(
-                result[metricName][titlePage],
-                resultDesktop[metricName][titlePage]
-              );
-              result[metricName][titlePage] = tempMobile;
-            } else {
-              let tempMobile = Object.assign(
-                result[metricName],
-                resultDesktop[metricName]
-              );
-              result[metricName] = tempMobile;
-            }
-          }
-        }
-        return result;
-      },
+      }
+      return [...names].sort((first, second) => {
+        if (first === "Performance") return -1;
+        if (second === "Performance") return 1;
+        return first.localeCompare(second);
+      });
     },
-    methods: {
-      sortData(data) {
-        if (!data) return [];
-        const ordered = Object.keys(data)
-          .sort()
-          .reduce((obj, key) => {
-            obj[key] = data[key];
-            return obj;
-          }, {});
-        return ordered;
-      },
-      getAverage(numbers) {
-        const sum = numbers.reduce((acc, number) => {
-          return Number(acc) + Number(number);
-        }, 0);
-        const length = numbers.length;
-        return sum / length;
-      },
-      getResultValue(value) {
-        if (typeof value === "string") {
-          return "";
-        }
-        let result = value;
-        const valueAllMeasurements = value.join(", ");
-        isDataOnlyNumber = value.join("").replace(/[\d.:]/g, "").length === 0;
-        const numberAfterPoint = (num) =>
-          num.toString().includes(".")
-            ? num.toString().split(".").pop().length
-            : 0;
-
-        if (isDataOnlyNumber) {
-          result = [
-            this.getAverage(value).toFixed(numberAfterPoint(value)),
-            valueAllMeasurements,
-          ];
-          return result;
-        }
-
-        //values contain both numbers and units
-        const onlyNumber = value.map((item) => {
-          if (item.includes("ms")) {
-            return item.replace(/[,]/g, "").replace(/[ms]/g, "").trim();
-          }
-          if (item.includes("s")) {
-            return item.replace(/[s]/g, "").trim();
-          }
-        });
-        return [
-          Number(
-            this.getAverage(onlyNumber).toFixed(numberAfterPoint(onlyNumber[0]))
-          ).toLocaleString(),
-          valueAllMeasurements,
-        ];
-      },
+  },
+  methods: {
+    async loadData() {
+      this.loading = true;
+      this.error = "";
+      try {
+        const [mobileData, desktopData] = await Promise.all([
+          loadJsonp("../log/all-log_mobile.json", "mobileShow"),
+          loadJsonp("../log/all-log_desktop.json", "desktopShow"),
+        ]);
+        this.mobileData = normalizePageData(mobileData, "mobile");
+        this.desktopData = normalizePageData(desktopData, "desktop");
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.loading = false;
+      }
     },
-  })
-    .use(vuetify)
-    .mount("#app");
-};
+    platformData(platform) {
+      return platform === "mobile" ? this.mobileData : this.desktopData;
+    },
+    sortedPages(pages) {
+      return Object.fromEntries(
+        Object.entries(pages).sort(([first], [second]) =>
+          first.localeCompare(second)
+        )
+      );
+    },
+    samples(value) {
+      return Array.isArray(value) ? value : [value];
+    },
+    average(value, metric) {
+      const values = this.samples(value)
+        .map((sample) => {
+          const normalized = String(sample)
+            .replace(/\u00a0/g, " ")
+            .replace(/,/g, "")
+            .trim();
+          const match = normalized.match(/^(-?\d+(?:\.\d+)?)\s*(ms|s)?$/i);
+          if (!match) return null;
+
+          const number = Number(match[1]);
+          if (!Number.isFinite(number)) return null;
+          return {
+            number: match[2]?.toLowerCase() === "s" ? number * 1000 : number,
+            unit: match[2]?.toLowerCase() || "",
+          };
+        })
+        .filter(Boolean);
+
+      if (!values.length) return "—";
+
+      const mean =
+        values.reduce((sum, item) => sum + item.number, 0) / values.length;
+      if (values.some((item) => item.unit === "s" || item.unit === "ms")) {
+        if (Math.abs(mean) >= 1000) {
+          return `${this.formatNumber(mean / 1000)} s`;
+        }
+        return `${this.formatNumber(mean)} ms`;
+      }
+
+      return metric === "Performance"
+        ? String(Math.round(mean))
+        : this.formatNumber(mean);
+    },
+    formatNumber(value) {
+      return new Intl.NumberFormat("ru-RU", {
+        maximumFractionDigits: 2,
+      }).format(value);
+    },
+    safeUrl(value) {
+      try {
+        const url = new URL(value);
+        return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+      } catch {
+        return null;
+      }
+    },
+  },
+  mounted() {
+    this.loadData();
+  },
+}).mount("#app");
