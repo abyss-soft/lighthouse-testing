@@ -1,93 +1,47 @@
-# Lighthouse-testing
+# Lighthouse testing
 
-> Automation of site testing in lighthouse
-> 
-> A dashboard of all measurements can be viewed here **/view/index.html** (two views, each showing the mean and measurements for each test), example
+Run repeatable local Lighthouse performance audits for the pages configured in
+`url.js`. Each audit saves a full Lighthouse JSON report and updates the
+mobile or desktop dashboard data in `log/`.
 
-<img title="" src="screen/screen1.png" alt="" width="800" height="600">
-<img title="" src="screen/screen4.png" alt="" width="800" height="700">
-<img title="" src="screen/screen3.png" alt="" width="800" height="600">
-<img title="" src="screen/screen2.png" alt="" width="800" height="600">
+## Requirements
 
-<img title="" src="screen/screen5.png" alt="" width="600" height="300">
-<img title="" src="screen/screen6.png" alt="" width="600" height="300">
+- Node.js 22.19 or newer
+- npm
+- Chrome or Chromium available to Lighthouse
 
-### Install
+## Setup
 
-> npm install
-
-### Run
-
-for sequential testing (everything is performed sequentially, one after the other. Suitable for slow computers):
-
-> npm run testing
-
-for asynchronous testing (everything is done at the same time), add a variable to the **.env** file **USEASYNCWORK="true"**
-
-> npm run testing
-
-### View dashboards for all statistics
-
-> view/index.html
-
-### Page setup and number of measurements per page
-
-In the **url.js** file, you need to create links to the pages of your site that need to be tested.
-
-Variable **countTesting = 3** in file start.js shows how many times to measure each link.
-
-All log files are stored in the /log directory.
-The general log history is accumulated in files:
-
-```
-/log/all-log_desktop.json
-/log/all-log_mobile.json
+```sh
+npm install
+cp .env.example .env
 ```
 
-In the same place in the /log directory, we also additionally save the log testing each link separately, the file naming rule:
+Edit `url.js` to add, remove, or replace the pages you want to audit. Only test
+pages you are permitted to measure. Configure repetitions with
+`COUNT_TESTING`.
 
-> **key from file url.js** + _report_ + **test number** + \_**desktop or mobile**.json
+## Run
 
-#### Example
-
-For example, we will test each page **three** times, the url.js file:
-
-```
-const urlList = {
-  "Main-page": "https://github.com/abyss-soft/",
-  "Page-webdev": "https://github.com/abyss-soft/webdev",
-  "Webpack-template": "https://github.com/abyss-soft/webpack-template-base",
-  "NuxtAndSEO": "https://github.com/abyss-soft/NuxtAndSEOforSearchEngines",
-};
+```sh
+npm start
+npm run start:desktop
+npm run start:mobile
+npm test
 ```
 
-The files will be named:
+`npm start` runs desktop then mobile audits sequentially. Each platform can
+also be run separately. Sequential measurements avoid opening many browser
+instances at once. If an audit fails, the error is reported and the process
+exits with a non-zero status after the remaining configured audits finish.
 
-```
-Main-page_report_1_desktop.json
-Main-page_report_1_mobile.json
-Main-page_report_2_desktop.json
-Main-page_report_2_mobile.json
-Main-page_report_3_desktop.json
-Main-page_report_3_mobile.json
-NuxtAndSEO_report_1_desktop.json
-NuxtAndSEO_report_1_mobile.json
-NuxtAndSEO_report_2_desktop.json
-NuxtAndSEO_report_2_mobile.json
-NuxtAndSEO_report_3_desktop.json
-NuxtAndSEO_report_3_mobile.json
-Page-webdev_report_1_desktop.json
-Page-webdev_report_1_mobile.json
-Page-webdev_report_2_desktop.json
-Page-webdev_report_2_mobile.json
-Page-webdev_report_3_desktop.json
-Page-webdev_report_3_mobile.json
-Webpack-template_report_1_desktop.json
-Webpack-template_report_1_mobile.json
-Webpack-template_report_2_desktop.json
-Webpack-template_report_2_mobile.json
-Webpack-template_report_3_desktop.json
-Webpack-template_report_3_mobile.json
-```
+## Results
 
-Viewing these files individually: https://googlechrome.github.io/lighthouse/viewer/
+Full reports are saved as
+`log/<page>_report_<run>_<platform>.json`. The dashboard summaries are
+`log/all-log_desktop.json` and `log/all-log_mobile.json`; open
+`view/index.html` to review them.
+
+ClickHouse export is disabled by default. To enable it, set `SENDDATA=true` in
+`.env`, then replace the example `CLICKHOUSE_URL`, `USERNAMELOGIN`, and
+`PASSWORDLOGIN` with your own values. There is no built-in server address.

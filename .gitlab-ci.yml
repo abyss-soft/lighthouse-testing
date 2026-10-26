@@ -1,14 +1,10 @@
-stages:
-  - deploy
+image: node:24
 
-Deploy:
-  variables:
-    GIT_STRATEGY: none
-    ANSIBLE_PLAYBOOK: lighthouse_testing.yml
-  stage: deploy
-  when: on_success
-  only:
-  - master
-  allow_failure: false
+stages:
+  - test
+
+test:
+  stage: test
   script:
-  - time /local/ansible/bin/deploy.sh
+    - npm ci
+    - npm test
