@@ -1,0 +1,14 @@
+stages:
+  - deploy
+
+Deploy:
+  variables:
+    GIT_STRATEGY: none
+    ANSIBLE_PLAYBOOK: lighthouse_testing.yml
+  stage: deploy
+  when: on_success
+  only:
+  - master
+  allow_failure: false
+  script:
+  - time /local/ansible/bin/deploy.sh
